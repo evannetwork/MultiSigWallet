@@ -1,9 +1,13 @@
 pragma solidity ^0.4.15;
 
+import "./DSRolesPerContract.sol";
+
 
 /// @title Multisignature wallet - Allows multiple parties to agree on transactions before execution.
 /// @author Stefan George - <stefan.george@consensys.net>
-contract MultiSigWallet {
+/// @author (modifications) Sebastian Wolfram - <sebastian.wolfram@contractus.com>
+///   - July 2018, use role based permissions for owner management instead of the onlyWallet modifier
+contract MultiSigWallet is DSAuth {
 
     /*
      *  Events
@@ -44,7 +48,12 @@ contract MultiSigWallet {
      *  Modifiers
      */
     modifier onlyWallet() {
-        require(msg.sender == address(this));
+        require(msg.sender != address(this));
+        _;
+    }
+
+    modifier notFromSelf() {
+        require(msg.sender != address(this));
         _;
     }
 
@@ -121,7 +130,8 @@ contract MultiSigWallet {
     /// @param owner Address of new owner.
     function addOwner(address owner)
         public
-        onlyWallet
+        auth
+        notFromSelf
         ownerDoesNotExist(owner)
         notNull(owner)
         validRequirement(owners.length + 1, required)
@@ -135,7 +145,8 @@ contract MultiSigWallet {
     /// @param owner Address of owner.
     function removeOwner(address owner)
         public
-        onlyWallet
+        auth
+        notFromSelf
         ownerExists(owner)
     {
         isOwner[owner] = false;
@@ -155,7 +166,8 @@ contract MultiSigWallet {
     /// @param newOwner Address of new owner.
     function replaceOwner(address owner, address newOwner)
         public
-        onlyWallet
+        auth
+        notFromSelf
         ownerExists(owner)
         ownerDoesNotExist(newOwner)
     {
@@ -174,7 +186,8 @@ contract MultiSigWallet {
     /// @param _required Number of required confirmations.
     function changeRequirement(uint _required)
         public
-        onlyWallet
+        auth
+        notFromSelf
         validRequirement(owners.length, _required)
     {
         required = _required;
